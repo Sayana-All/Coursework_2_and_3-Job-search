@@ -23,7 +23,7 @@ def test_api_connection(mock_get):
 
 
 def test_get_vacancies():
-    """Тестирование на получения списка вакансий"""
+    """Тестирование на получение списка вакансий"""
     api = HeadHunterAPI()
 
     with patch("requests.get") as mock_get:

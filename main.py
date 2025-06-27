@@ -33,29 +33,23 @@ def user_interaction():
 
         print(f"\nНайдено {len(top_vacancies)} вакансий:")
         for i, vacancy in enumerate(top_vacancies, 1):
-            salary = vacancy.salary
-            salary_str = f"{salary.get('from', '?')}-{salary.get('to', '?')} {salary.get('currency', '')}"
-            print(f"{i}. {vacancy.title}\nЗарплата: {salary_str}\nСсылка: {vacancy.url}\n")
+            print(f"{i}. {vacancy}\n")
 
         # Сохранение результатов
         if top_vacancies and input("\nСохранить результаты? (да/нет): ").lower() == "да":
             save_format = input("В каком формате сохранить? (json/csv): ").lower()
 
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-
             if save_format == "json":
-                saver = JSONSaver(f"vacancies_{timestamp}.json")
+                saver = JSONSaver()
             elif save_format == "csv":
-                saver = CSVSaver(f"vacancies_{timestamp}.csv")
+                saver = CSVSaver()
             else:
                 print("Неверный формат. Используется JSON по умолчанию.")
-                saver = JSONSaver(f"vacancies_{timestamp}.json")
+                saver = JSONSaver()
 
-            # Добавляем вакансии
             for vacancy in top_vacancies:
                 saver.add_vacancy(vacancy)
 
-            # Получаем имя файла через защищенный доступ
             filename = saver._JSONSaver__filename if isinstance(saver, JSONSaver) else saver._CSVSaver__filename
             print(f"\nДанные сохранены в файл: {filename}")
 
