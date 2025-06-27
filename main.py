@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from src.apies import HeadHunterAPI
 from src.reports import CSVSaver, JSONSaver
 from src.vacancy import Vacancy
@@ -17,7 +19,7 @@ def user_interaction():
         hh_vacancies = hh_api.get_vacancies(search_query)
         vacancies_list = Vacancy.cast_to_object_list(hh_vacancies)
 
-        # Фильтрация по ключевым словам
+        # Фильтрация
         filtered_vacancies = [
             v
             for v in vacancies_list
@@ -25,7 +27,7 @@ def user_interaction():
             and v.matches_salary_range(salary_range)
         ]
 
-        # Сортировка по зарплате
+        # Сортировка и вывод
         sorted_vacancies = sorted(filtered_vacancies, reverse=True)
         top_vacancies = sorted_vacancies[:top_n]
 
@@ -35,26 +37,32 @@ def user_interaction():
             salary_str = f"{salary.get('from', '?')}-{salary.get('to', '?')} {salary.get('currency', '')}"
             print(f"{i}. {vacancy.title}\nЗарплата: {salary_str}\nСсылка: {vacancy.url}\n")
 
-        # Запрос на сохранение
+        # Сохранение результатов
         if top_vacancies and input("\nСохранить результаты? (да/нет): ").lower() == "да":
             save_format = input("В каком формате сохранить? (json/csv): ").lower()
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+
             if save_format == "json":
-                saver = JSONSaver()
+                saver = JSONSaver(f"vacancies_{timestamp}.json")
             elif save_format == "csv":
-                saver = CSVSaver()
+                saver = CSVSaver(f"vacancies_{timestamp}.csv")
             else:
                 print("Неверный формат. Используется JSON по умолчанию.")
-                saver = JSONSaver()
+                saver = JSONSaver(f"vacancies_{timestamp}.json")
 
+            # Добавляем вакансии
             for vacancy in top_vacancies:
                 saver.add_vacancy(vacancy)
-            print(f"\nДанные сохранены в файл: {saver.filename}")
 
-        else:
-            print("Результаты не сохранены.")
+            # Получаем имя файла через защищенный доступ
+            filename = saver._JSONSaver__filename if isinstance(saver, JSONSaver) else saver._CSVSaver__filename
+            print(f"\nДанные сохранены в файл: {filename}")
 
+    except ValueError:
+        print("Ошибка: введено некорректное число")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Произошла ошибка: {e}")
 
 
 if __name__ == "__main__":
