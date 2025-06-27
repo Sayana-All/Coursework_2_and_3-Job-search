@@ -1,6 +1,7 @@
 import pytest
 
 from src.apies import AbstractAPI, HeadHunterAPI
+from src.reports import CSVSaver, JSONSaver
 from src.vacancy import Vacancy
 
 
@@ -24,7 +25,7 @@ def sample_vacancy():
         title="Python Developer",
         url="https://hh.ru/vacancy/123",
         salary={"from": 100000, "to": 150000, "currency": "RUB"},
-        description="Описание вакансии",
+        description="Требования к кандидату",
     )
 
 
@@ -36,8 +37,22 @@ def vacancy_no_salary():
 @pytest.fixture
 def test_vacancy():
     return Vacancy(
-        title="Test Developer",
-        url="https://test.ru",
+        title="Python Developer",
+        url="https://hh.ru/vacancy/1",
         salary={"from": 100000, "to": 150000, "currency": "RUB"},
-        description="Test description",
+        description="Experience required",
     )
+
+
+@pytest.fixture
+def json_saver(tmp_path):
+    """Фикстура с временным путём для тестов"""
+    test_file = tmp_path / "vacancies.json"
+    return JSONSaver(filename=str(test_file))
+
+
+@pytest.fixture
+def csv_saver(tmp_path):
+    """Фикстура с временным путём для тестов"""
+    test_file = tmp_path / "test_vacancies.csv"
+    return CSVSaver(filename=str(test_file))

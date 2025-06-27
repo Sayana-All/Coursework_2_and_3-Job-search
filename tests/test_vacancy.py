@@ -1,4 +1,16 @@
+import pytest
+
 from src.vacancy import Vacancy
+
+
+def test_slots_restriction():
+    """Тестирование ограничений __slots__"""
+    vacancy = Vacancy("A", "#", None, "")
+
+    assert hasattr(vacancy, "__slots__")
+
+    with pytest.raises(AttributeError):
+        vacancy.new_attr = "test"
 
 
 def test_vacancy_creation(sample_vacancy):
@@ -7,20 +19,24 @@ def test_vacancy_creation(sample_vacancy):
     assert sample_vacancy.salary["from"] == 100000
     assert sample_vacancy.salary["to"] == 150000
     assert sample_vacancy.avg_salary == 125000
-    assert sample_vacancy.description == "Описание вакансии"
+    assert sample_vacancy.description == "Требования к кандидату"
 
 
 def test_vacancy_no_salary(vacancy_no_salary):
-    """Тест вакансии без зарплаты"""
+    """Тестирование на добавление вакансии без зарплаты"""
     assert vacancy_no_salary.salary == {"from": 0, "to": 0, "currency": "не указана"}
     assert vacancy_no_salary.avg_salary == 0
 
 
-def test_no_salary(vacancy_no_salary):
-    """Тестирование на добавление вакансии без зарплаты"""
-    assert vacancy_no_salary.salary["from"] == 0
-    assert vacancy_no_salary.salary["to"] == 0
-    assert vacancy_no_salary.avg_salary == 0
+def test_vacancy_to_dict(test_vacancy):
+    """Тестирование преобразования вакансии в словарь"""
+    vacancy_dict = test_vacancy.to_dict()
+    assert vacancy_dict == {
+        "title": "Python Developer",
+        "url": "https://hh.ru/vacancy/1",
+        "salary": {"from": 100000, "to": 150000, "currency": "RUB"},
+        "description": "Experience required",
+    }
 
 
 def test_comparison(sample_vacancy, vacancy_no_salary):
@@ -67,3 +83,12 @@ def test_cast_to_object_list():
     vacancies = Vacancy.cast_to_object_list(test_data)
     assert len(vacancies) == 1
     assert vacancies[0].title == "Java Dev"
+
+
+def test_str_representation(sample_vacancy):
+    """Тест строкового представления класса Vacancy"""
+    result = str(sample_vacancy)
+    assert "Вакансия: Python Developer" in result
+    assert "Зарплата: 100000-150000 RUB" in result
+    assert "Ссылка: https://hh.ru/vacancy/123" in result
+    assert "Описание: Требования к кандидату" in result

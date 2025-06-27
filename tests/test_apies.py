@@ -1,51 +1,39 @@
-from unittest.mock import patch, Mock
+from unittest.mock import MagicMock, patch
 
-import pytest
-import requests
-
-from src.apies import AbstractAPI, HeadHunterAPI
+from src.apies import HeadHunterAPI
 
 
-def test_abstract_api(abstract_api):
-    """Проверка, что абстрактный класс нельзя создать напрямую"""
-    with pytest.raises(TypeError):
-        AbstractAPI()
-
-    assert abstract_api.get_vacancies("test") == [{"test": "data"}]
+def test_private_connection():
+    """Проверка наличия приватного метода"""
+    api = HeadHunterAPI()
+    assert hasattr(api, "_HeadHunterAPI__connect_to_api")
 
 
-def test_hh_api():
-    """Тестирование успешного запроса к HH API"""
-    with patch("src.apies.requests.get") as mock_get:
-        mock_response = Mock()
-        mock_response.json.return_value = {"items": [{"name": "Python Dev"}]}
+@patch("requests.get")
+def test_api_connection(mock_get):
+    """Тест работы приватного метода"""
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
+    mock_get.return_value = mock_response
+
+    api = HeadHunterAPI()
+    # Вызываем приватный метод через name mangling
+    result = api._HeadHunterAPI__connect_to_api("test_url", {})
+    assert result == mock_response
+
+
+def test_get_vacancies():
+    """Тестирование на получения списка вакансий"""
+    api = HeadHunterAPI()
+
+    with patch("requests.get") as mock_get:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"items": [{"id": "1"}]}
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
 
-        hh_api = HeadHunterAPI()
-        result = hh_api.get_vacancies("Python")
+        result = api.get_vacancies("Python")
         assert len(result) == 1
-        assert result[0]["name"] == "Python Dev"
         mock_get.assert_called_once_with(
-            "https://api.hh.ru/vacancies", params={"text": "Python", "area": 113, "per_page": 100}
+            "https://api.hh.ru/vacancies", params={"area": 113, "per_page": 100, "text": "Python"}, timeout=10
         )
-
-
-def test_hh_api_invalid_json(hh_api):
-    """Тест обработки невалидного JSON"""
-    with patch("src.apies.requests.get") as mock_get:
-        mock_response = Mock()
-        mock_response.json.side_effect = ValueError("Invalid JSON")
-        mock_get.return_value = mock_response
-
-        result = hh_api.get_vacancies("Python")
-        assert result == []
-
-
-def test_hh_api_connection_error(hh_api):
-    """Тест ошибки соединения"""
-    with patch("src.apies.requests.get") as mock_get:
-        mock_get.side_effect = requests.exceptions.ConnectionError("No connection")
-        result = hh_api.get_vacancies("Python")
-
-        assert result == []

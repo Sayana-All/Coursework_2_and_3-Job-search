@@ -1,66 +1,100 @@
-import pytest
-from unittest.mock import patch, mock_open, MagicMock
-import json
+import csv
 import os
-from src.reports import JSONSaver, CSVSaver
 
 
-def test_json_saver_add(test_vacancy):
-    """Тестирование добавления вакансии в JSON"""
-    written_data = []
-
-    def mock_write(data):
-        written_data.append(data)
-        return len(data)
-
-    mock_file = mock_open()
-    mock_file().write.side_effect = mock_write
-
-    with (
-        patch("builtins.open", mock_file),
-        patch("os.path.exists", return_value=True),
-        patch("json.load", return_value=[]),
-    ):
-        saver = JSONSaver("test.json")
-        saver.add_vacancy(test_vacancy)
-
-        full_content = "".join(written_data)
-        parsed_content = json.loads(full_content)
-
-        assert len(parsed_content) == 1
-        assert parsed_content[0]["title"] == "Test Developer"
-        assert parsed_content[0]["url"] == "https://test.ru"
+def test_json_saver_private_filename(json_saver):
+    """Проверка наличия приватного атрибута __filename в JSONSaver"""
+    assert hasattr(json_saver, "_JSONSaver__filename")
 
 
-def test_json_saver_delete(test_vacancy):
-    """Тестирование удаления вакансии из JSON"""
-    initial_data = [test_vacancy.__dict__]
+def test_json_add_and_get_vacancy(json_saver, test_vacancy):
+    """Тест добавления и получения вакансии в JSON-файле"""
+    json_saver.add_vacancy(test_vacancy)
+    assert os.path.exists(json_saver._JSONSaver__filename)
 
-    with (
-        patch("builtins.open", mock_open(read_data=json.dumps(initial_data))),
-        patch("os.path.exists", return_value=True),
-        patch("json.load", return_value=initial_data),
-    ):
-        saver = JSONSaver("test.json")
-        saver.delete_vacancy(test_vacancy)
+    vacancies = json_saver.get_vacancies()
+    assert len(vacancies) == 1
+    assert vacancies[0]["title"] == "Python Developer"
+    assert vacancies[0]["url"] == "https://hh.ru/vacancy/1"
 
 
-def test_csv_saver_add(test_vacancy):
-    """Тестирование добавления в CSV"""
-    with patch("builtins.open", mock_open()) as mock_file, patch("csv.DictWriter") as mock_writer:
-        mock_writer_instance = MagicMock()
-        mock_writer.return_value = mock_writer_instance
+def test_json_duplicate_vacancy(json_saver, test_vacancy):
+    """Проверка защиты от дубликатов в JSON-файле"""
+    json_saver.add_vacancy(test_vacancy)
+    json_saver.add_vacancy(test_vacancy)
 
-        saver = CSVSaver("test.csv")
-        saver.add_vacancy(test_vacancy)
-
-        mock_writer_instance.writerow.assert_called_once_with(test_vacancy.__dict__)
+    vacancies = json_saver.get_vacancies()
+    assert len(vacancies) == 1
 
 
-def test_clear_file():
-    """Тестирование удаления файла"""
-    with patch("os.remove") as mock_remove, patch("os.path.exists", return_value=True):
-        saver = JSONSaver("test.json")
-        saver.clear_file()
+def test_json_delete_vacancy(json_saver, test_vacancy):
+    """Тест удаления вакансии из JSON-файла"""
+    json_saver.add_vacancy(test_vacancy)
+    json_saver.delete_vacancy(test_vacancy)
 
-        mock_remove.assert_called_once_with(os.path.join("data", "test.json"))
+    vacancies = json_saver.get_vacancies()
+    assert len(vacancies) == 0
+
+
+def test_json_clear_file(json_saver, test_vacancy):
+    """Тест очистки JSON-файла"""
+    json_saver.add_vacancy(test_vacancy)
+    json_saver.clear_file()
+
+    assert not os.path.exists(json_saver._JSONSaver__filename)
+
+
+def test_csv_saver_init(csv_saver, tmp_path):
+    """Тест инициализации CSVSaver"""
+    assert hasattr(csv_saver, "_CSVSaver__filename")
+    assert str(csv_saver._CSVSaver__filename) == str(tmp_path / "test_vacancies.csv")
+
+
+def test_csv_add_vacancy(csv_saver, test_vacancy):
+    """Тестирование на добавление вакансии в CSV-файл"""
+    csv_saver.add_vacancy(test_vacancy)
+
+    with open(csv_saver._CSVSaver__filename, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        data = list(reader)
+
+    assert len(data) == 1
+    assert data[0]["title"] == "Python Developer"
+
+
+def test_csv_add_duplicate_vacancy(csv_saver, test_vacancy):
+    """Проверка на добавление дубликата вакансии в CSV-файл"""
+    csv_saver.add_vacancy(test_vacancy)
+    csv_saver.add_vacancy(test_vacancy)  # Пытаемся добавить дубликат
+
+    with open(csv_saver._CSVSaver__filename, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        data = list(reader)
+
+    assert len(data) == 1
+
+
+def test_csv_get_vacancies(csv_saver, test_vacancy):
+    """Тест получения вакансий из CSV-файла"""
+    csv_saver.add_vacancy(test_vacancy)
+    vacancies = csv_saver.get_vacancies()
+
+    assert len(vacancies) == 1
+    assert vacancies[0]["url"] == "https://hh.ru/vacancy/1"
+
+
+def test_csv_delete_vacancy(csv_saver, test_vacancy):
+    """Тест удаления вакансии из CSV-файла"""
+    csv_saver.add_vacancy(test_vacancy)
+    csv_saver.delete_vacancy(test_vacancy)
+
+    vacancies = csv_saver.get_vacancies()
+    assert len(vacancies) == 0
+
+
+def test_csv_clear_file(csv_saver, test_vacancy):
+    """Тест очистки CSV-файла"""
+    csv_saver.add_vacancy(test_vacancy)
+    csv_saver.clear_file()
+
+    assert not os.path.exists(csv_saver._CSVSaver__filename)
