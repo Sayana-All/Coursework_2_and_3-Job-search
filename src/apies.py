@@ -19,11 +19,10 @@ class HeadHunterAPI(AbstractAPI):
 
     def get_vacancies(self, query: str) -> list[dict]:
         """Метод для получения списка вакансий по запросу пользователя"""
-        params = {
-            "text": query,
-            "area": 113,  # 113 — Россия
-            "per_page": 100
-        }
-        response = requests.get(self.base_url, params=params)
-        response.raise_for_status()
-        return response.json().get("items", [])
+        params = {"text": query, "area": 113, "per_page": 100}  # 113 — Россия
+        try:
+            response = requests.get(self.base_url, params=params)
+            response.raise_for_status()
+            return response.json().get("items", [])
+        except (requests.exceptions.RequestException, ValueError):
+            return []

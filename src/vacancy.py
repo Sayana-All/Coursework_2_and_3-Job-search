@@ -15,7 +15,7 @@ class Vacancy:
         return {
             "from": salary.get("from", 0) or 0,
             "to": salary.get("to", 0) or 0,
-            "currency": salary.get("currency", "не указана")
+            "currency": salary.get("currency", "не указана"),
         }
 
     @property
@@ -31,6 +31,23 @@ class Vacancy:
         """Метод для сравнения вакансий по зарплате (`>`)."""
         return self.avg_salary > other.avg_salary
 
+    def matches_salary_range(self, salary_range: str) -> bool:
+        """Проверяет, попадает ли вакансия в указанный диапазон зарплат"""
+        if not salary_range:
+            return True
+
+        try:
+            if "-" in salary_range:
+                min_s, max_s = map(int, salary_range.split("-"))
+            else:
+                min_s = max_s = int(salary_range)
+
+            vacancy_min = self.salary.get("from", 0) or 0
+            vacancy_max = self.salary.get("to", 0) or 0
+            return (vacancy_min <= max_s) and (vacancy_max >= min_s)
+        except (ValueError, AttributeError):
+            return False
+
     def __str__(self) -> str:
         salary_info = f"Зарплата: {self.salary['from']}-{self.salary['to']} {self.salary['currency']}"
         return f"{self.title}\n{salary_info}\nСсылка: {self.url}\nОписание: {self.description[:100]}...\n"
@@ -44,7 +61,7 @@ class Vacancy:
                 title=item.get("name", "Без названия"),
                 url=item.get("alternate_url", "#"),
                 salary=item.get("salary"),
-                description=item.get("snippet", {}).get("requirement", "Нет описания")
+                description=item.get("snippet", {}).get("requirement", "Нет описания"),
             )
             vacancies.append(vacancy)
         return vacancies

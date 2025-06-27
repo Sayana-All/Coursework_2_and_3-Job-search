@@ -4,9 +4,11 @@ import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from openpyxl import load_workbook, Workbook
 
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
+
 
 class AbstractSaver(ABC):
     """Абстрактный класс для работы с входящими данными"""
@@ -29,7 +31,8 @@ class JSONSaver(AbstractSaver):
 
     def __init__(self, filename: str = "vacancies.json"):
         """Конструктор для создания объектов класса JSONSaver"""
-        self.filename = DATA_DIR / filename
+        self.filename = os.path.join("data", filename)
+        os.makedirs(os.path.dirname(self.filename), exist_ok=True)
 
     def add_vacancy(self, vacancy) -> None:
         """Метод для добавления вакансии в файл"""
@@ -112,5 +115,3 @@ class CSVSaver(AbstractSaver):
         """Метод удаления CSV-файла"""
         if os.path.exists(self.filename):
             os.remove(self.filename)
-
-
