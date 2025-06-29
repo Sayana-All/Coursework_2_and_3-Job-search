@@ -22,6 +22,7 @@ class HeadHunterAPI(AbstractAPI):
 
     def __init__(self):
         """Инициализация с приватными атрибутами"""
+        self._check_private_method()
         self.__base_url = "https://api.hh.ru/vacancies"
         self.__default_params = {"area": 113, "per_page": 100}
 
@@ -37,7 +38,6 @@ class HeadHunterAPI(AbstractAPI):
 
     def get_vacancies(self, query: str) -> list[dict]:
         """Публичный метод получения вакансий по заданной строке"""
-        self._check_private_method()
         params = self.__default_params.copy()
         params["text"] = query
 

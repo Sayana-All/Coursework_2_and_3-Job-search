@@ -1,14 +1,12 @@
-from datetime import datetime
-
 from src.apies import HeadHunterAPI
 from src.reports import CSVSaver, JSONSaver
 from src.vacancy import Vacancy
 
 
 def user_interaction():
-    try:
-        hh_api = HeadHunterAPI()
+    hh_api = HeadHunterAPI()
 
+    try:
         print("🔍 Поиск вакансий на hh.ru")
         search_query = input("Введите поисковый запрос (например, 'Python'): ").title()
         top_n = int(input("Сколько вакансий вывести в топ? "))

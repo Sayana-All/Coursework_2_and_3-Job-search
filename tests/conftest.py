@@ -1,17 +1,8 @@
 import pytest
 
-from src.apies import AbstractAPI, HeadHunterAPI
+from src.apies import HeadHunterAPI
 from src.reports import CSVSaver, JSONSaver
 from src.vacancy import Vacancy
-
-
-@pytest.fixture
-def abstract_api():
-    class TestAPI(AbstractAPI):
-        def get_vacancies(self, query):
-            return [{"test": "data"}]
-
-    return TestAPI()
 
 
 @pytest.fixture
