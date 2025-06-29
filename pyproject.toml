@@ -1,0 +1,51 @@
+[project]
+name = "coursework2-job-search"
+version = "0.1.0"
+description = "Курсовая по 4 модулю. Поиск вакансий с использованием API-сервиса hh.ru"
+authors = [
+    {name = "anisa",email = "anisahime@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "requests (>=2.32.4,<3.0.0)",
+    "openpyxl (>=3.1.5,<4.0.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.lint.dependencies]
+black = "^25.1.0"
+flake8 = "^7.3.0"
+isort = "^6.0.1"
+
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.4.1"
+pytest-cov = "^6.2.1"
+
+[tool.black]
+line-length = 119
+# Файлы, которые не нужно форматировать
+exclude = '''
+(
+  /(
+      \.eggs         # Исключить несколько общих каталогов
+    | \.git          # в корне проекта
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | dist
+  )/
+  | foo.py           # Также отдельно исключить файл с именем foo.py
+                     # в корне проекта
+)
+'''
+
+[tool.isort]
+line_length = 119
