@@ -31,7 +31,7 @@ class DBManager:
             self.conn.close()
 
     def create_database(self):
-        """Безопасное создание БД"""
+        """Метод для создания БД или подключения к существующей"""
         conn = None
         try:
             params = config()
@@ -41,7 +41,6 @@ class DBManager:
             conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
             cursor = conn.cursor()
 
-            # Проверяем существование БД
             cursor.execute(sql.SQL("SELECT 1 FROM pg_database WHERE datname = {}").format(sql.Literal(self.db_name)))
             exists = cursor.fetchone()
 
@@ -59,7 +58,7 @@ class DBManager:
                 conn.close()
 
     def create_tables(self):
-        """Безопасное создание таблиц"""
+        """Метод для создания таблиц в БД"""
         commands = (
             """
             CREATE TABLE IF NOT EXISTS employers (

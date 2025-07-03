@@ -125,7 +125,6 @@ def load_vacancies(hh_api: HeadHunterAPI, db_manager: DBManager):
         success_count = 0
         for vacancy in vacancies:
             try:
-                # Добавляем employer_id в данные вакансии
                 vacancy["employer"] = {"id": employer_id}
                 db_manager.insert_vacancy(vacancy)
                 success_count += 1

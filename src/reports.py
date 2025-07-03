@@ -80,7 +80,7 @@ class JSONSaver(AbstractSaver):
             print("Файл не найден.")
 
     def import_to_database(self, db_manager: "DBManager") -> dict:
-        """Импортирует вакансии из JSON-файла в базу данных"""
+        """Метод для импорта вакансий из JSON-файла в базу данных"""
         result = {"total": 0, "added": 0, "errors": 0}
         vacancies_data = self._load_data()
 
@@ -186,7 +186,6 @@ class CSVSaver(AbstractSaver):
 
         for vac_data in vacancies_data:
             try:
-                # Преобразуем строковые данные в нужные типы
                 salary_from = int(vac_data.get("salary_from", 0)) if vac_data.get("salary_from") else 0
                 salary_to = int(vac_data.get("salary_to", 0)) if vac_data.get("salary_to") else 0
 
@@ -202,7 +201,6 @@ class CSVSaver(AbstractSaver):
                     "id": int(vac_data.get("id", 0)),
                 }
 
-                # Обработка работодателя
                 if "employer_id" in vac_data:
                     vacancy_dict["employer"] = {"id": int(vac_data["employer_id"])}
                 else:
