@@ -111,6 +111,20 @@ class Vacancy:
             for item in vacancies_data
         ]
 
+    @classmethod
+    def from_db_row(cls, db_row: tuple):
+        """Класс-метод для создания объекта Vacancy из строки БД"""
+        return cls(
+            title=db_row[1],  # предполагаем что title в колонке 1
+            url=db_row[6],  # url в колонке 6
+            salary={
+                "from": db_row[3] if db_row[3] else 0,  # salary_from
+                "to": db_row[4] if db_row[4] else 0,  # salary_to
+                "currency": db_row[5] if db_row[5] else "не указана",
+            },
+            description=db_row[7] if len(db_row) > 7 else "",
+        )
+
     def __str__(self) -> str:
         """Строковое представление вакансии"""
         salary = self._salary
