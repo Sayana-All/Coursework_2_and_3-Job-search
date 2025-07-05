@@ -1,7 +1,9 @@
 import unittest
-from unittest.mock import patch, MagicMock
-from src.apies import AbstractAPI, HeadHunterAPI
+from unittest.mock import MagicMock, patch
+
 import requests
+
+from src.apies import AbstractAPI, HeadHunterAPI
 
 
 class TestAbstractAPI(unittest.TestCase):
@@ -26,7 +28,7 @@ class TestHeadHunterAPI(unittest.TestCase):
                     "name": "Python Developer",
                     "alternate_url": "https://hh.ru/vacancy/123",
                     "salary": {"from": 100000, "to": 150000, "currency": "RUR"},
-                    "snippet": {"requirement": "Опыт работы с Python"}
+                    "snippet": {"requirement": "Опыт работы с Python"},
                 }
             ]
         }
@@ -39,7 +41,7 @@ class TestHeadHunterAPI(unittest.TestCase):
         self.assertEqual(employers[0]["name"], "Сбер")
         self.assertEqual(employers[-1]["name"], "Wildberries")
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_get_employer_vacancies_success(self, mock_get):
         """Тест успешного получения вакансий"""
         # Настраиваем mock
@@ -58,10 +60,10 @@ class TestHeadHunterAPI(unittest.TestCase):
         mock_get.assert_called_once_with(
             "https://api.hh.ru/vacancies",
             params={"employer_id": self.test_employer_id, "per_page": 100, "area": 113},
-            timeout=30
+            timeout=30,
         )
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_get_employer_vacancies_no_items(self, mock_get):
         """Тест случая, когда API возвращает неожиданный формат"""
         mock_response = MagicMock()
@@ -71,7 +73,7 @@ class TestHeadHunterAPI(unittest.TestCase):
         vacancies = self.api.get_employer_vacancies(self.test_employer_id)
         self.assertEqual(vacancies, [])
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_get_employer_vacancies_request_exception(self, mock_get):
         """Тест обработки ошибки запроса"""
         mock_get.side_effect = requests.RequestException("Connection error")
@@ -79,7 +81,7 @@ class TestHeadHunterAPI(unittest.TestCase):
         vacancies = self.api.get_employer_vacancies(self.test_employer_id)
         self.assertEqual(vacancies, [])
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_get_employer_vacancies_json_decode_error(self, mock_get):
         """Тест обработки ошибки декодирования JSON"""
         mock_response = MagicMock()
@@ -94,7 +96,7 @@ class TestHeadHunterAPI(unittest.TestCase):
         vacancies = self.api.get_employer_vacancies(-1)
         self.assertEqual(vacancies, [])
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_get_employer_vacancies_empty_response(self, mock_get):
         """Тест пустого ответа от API"""
         mock_response = MagicMock()
@@ -105,5 +107,5 @@ class TestHeadHunterAPI(unittest.TestCase):
         self.assertEqual(vacancies, [])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -8,72 +8,67 @@ from src.db_manager import DBManager
 from src.reports import CSVSaver, JSONSaver
 
 
-def user_interaction():
-    """Основная функция взаимодействия с пользователем"""
-    print("Добро пожаловать в систему сбора вакансий с hh.ru!")
-
-    # Инициализация
-    db_name = "vacancies"
-    hh_api = HeadHunterAPI()
-
-    # Подключение к БД
+def initialize_database(db_name: str = "vacancies") -> DBManager:
+    """Функция автоматического создания БД и таблицы (если их нет)"""
     try:
-        db_params = config()
-        db_params["database"] = db_name
+        db_manager = DBManager(db_name)
+        db_manager.create_database()
 
-        with psycopg2.connect(**db_params) as conn:
-            db_manager = DBManager(db_name)
-            db_manager.conn = conn
-
-            while True:
-                print("\n=== Главное меню ===")
-                print("1. Загрузить вакансии выбранных компаний")
-                print("2. Показать список компаний и количество вакансий")
-                print("3. Показать все вакансии")
-                print("4. Показать среднюю зарплату")
-                print("5. Показать вакансии с зарплатой выше средней")
-                print("6. Поиск вакансий по ключевому слову")
-                print("7. Экспорт вакансий в JSON")
-                print("8. Экспорт вакансий в CSV")
-                print("0. Выход")
-
-                choice = input("\nВыберите действие: ")
-
-                if choice == "1":
-                    load_vacancies(hh_api, db_manager)
-                elif choice == "2":
-                    show_companies(db_manager)
-                elif choice == "3":
-                    show_all_vacancies(db_manager)
-                elif choice == "4":
-                    show_avg_salary(db_manager)
-                elif choice == "5":
-                    show_high_salary_vacancies(db_manager)
-                elif choice == "6":
-                    search_vacancies(db_manager)
-                elif choice == "7":
-                    filename = (
-                        input("Введите имя файла для экспорта (по умолчанию vacancies_export.json): ")
-                        or "vacancies_export.json"
-                    )
-                    export_vacancies_to_json(db_manager, filename)
-                elif choice == "8":
-                    filename = (
-                        input("Введите имя файла для экспорта (по умолчанию vacancies_export.csv): ")
-                        or "vacancies_export.csv"
-                    )
-                    export_vacancies_to_csv(db_manager, filename)
-                elif choice == "0":
-                    print("Работа программы завершена.")
-                    break
-                else:
-                    print("Неверный ввод, попробуйте еще раз.")
+        with db_manager:
+            db_manager.create_tables()
+            print("✅ База данных и таблицы успешно инициализированы")
+            return db_manager
 
     except Exception as e:
-        print(f"Произошла ошибка: {e}")
-    finally:
-        if "conn" in locals():
-            conn.close()
+        print(f"❌ Ошибка при инициализации БД: {e}")
+        raise
+
+
+def user_interaction(db_manager: DBManager):
+    """Основная функция взаимодействия с пользователем"""
+    print("Добро пожаловать в систему сбора вакансий с hh.ru!")
+    hh_api = HeadHunterAPI()
+
+    while True:
+        print("\n=== Главное меню ===")
+        print("1. Загрузить вакансии выбранных компаний")
+        print("2. Показать список компаний и количество вакансий")
+        print("3. Показать все вакансии")
+        print("4. Показать среднюю зарплату")
+        print("5. Показать вакансии с зарплатой выше средней")
+        print("6. Поиск вакансий по ключевому слову")
+        print("7. Экспорт вакансий в JSON")
+        print("8. Экспорт вакансий в CSV")
+        print("0. Выход")
+        choice = input("\nВыберите действие: ")
+        if choice == "1":
+            load_vacancies(hh_api, db_manager)
+        elif choice == "2":
+            show_companies(db_manager)
+        elif choice == "3":
+            show_all_vacancies(db_manager)
+        elif choice == "4":
+            show_avg_salary(db_manager)
+        elif choice == "5":
+            show_high_salary_vacancies(db_manager)
+        elif choice == "6":
+            search_vacancies(db_manager)
+        elif choice == "7":
+            filename = (
+                input("Введите имя файла для экспорта (по умолчанию vacancies_export.json): ")
+                or "vacancies_export.json"
+            )
+            export_vacancies_to_json(db_manager, filename)
+        elif choice == "8":
+            filename = (
+                input("Введите имя файла для экспорта (по умолчанию vacancies_export.csv): ") or "vacancies_export.csv"
+            )
+            export_vacancies_to_csv(db_manager, filename)
+        elif choice == "0":
+            print("Работа программы завершена.")
+            break
+        else:
+            print("Неверный ввод, попробуйте еще раз.")
 
 
 def load_vacancies(hh_api: HeadHunterAPI, db_manager: DBManager):
@@ -265,4 +260,8 @@ def export_vacancies_to_csv(db_manager: DBManager, filename: str = "vacancies_ex
 
 
 if __name__ == "__main__":
-    user_interaction()
+    try:
+        db_manager = initialize_database()
+        user_interaction(db_manager)
+    except Exception as e:
+        print(f"Программа завершена с ошибкой: {e}")
