@@ -12,50 +12,44 @@ class DBManager:
     def __init__(self, db_name: str):
         self.db_name = db_name
         self.conn = None
+        self._connect()
 
-    def __enter__(self):
-        """Контекстный менеджер для подключения к БД"""
-        params = config()
-        params.update({"database": self.db_name})
-
+    def _connect(self):
+        """Внутренний метод для установки соединения"""
         try:
+            params = config()
+            params["database"] = self.db_name
             self.conn = psycopg2.connect(**params)
-            return self
+            return True
         except Exception as e:
-            print(f"Ошибка подключения к базе данных: {e}")
-            raise
+            print(f"Ошибка подключения: {e}")
+            return False
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Метод для завершения соединения с БД"""
-        if self.conn:
-            self.conn.close()
+    def is_connected(self) -> bool:
+        """Метод для проверки активности соединения"""
+        if self.conn is None:
+            return False
+        return self.conn.closed == 0
 
     def create_database(self):
         """Метод для создания БД или подключения к существующей"""
-        conn = None
         try:
             params = config()
-            params.pop("database", None)
-
-            conn = psycopg2.connect(**params)
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            cursor = conn.cursor()
-
-            cursor.execute(sql.SQL("SELECT 1 FROM pg_database WHERE datname = {}").format(sql.Literal(self.db_name)))
-            exists = cursor.fetchone()
-
-            if exists:
-                print(f"База данных {self.db_name} уже существует")
-            else:
-                cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.db_name)))
-                print(f"База данных {self.db_name} успешно создана")
-
+            params.pop("database", None)  # Подключаемся без указания БД
+            with psycopg2.connect(**params) as conn:  # Используем контекстный менеджер
+                conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        sql.SQL("SELECT 1 FROM pg_database WHERE datname = {}").format(sql.Literal(self.db_name))
+                    )
+                    if not cursor.fetchone():
+                        cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.db_name)))
+                        print(f"База данных {self.db_name} создана")
+                    else:
+                        print(f"База данных {self.db_name} уже существует")
         except Exception as e:
-            print(f"Ошибка при работе с базой данных: {e}")
+            print(f"Ошибка при создании БД: {e}")
             raise
-        finally:
-            if conn:
-                conn.close()
 
     def create_tables(self):
         """Метод для создания таблиц в БД"""
@@ -93,6 +87,10 @@ class DBManager:
             self.conn.rollback()
             print(f"Ошибка при создании таблиц: {e}")
             raise
+
+    def is_connected(self) -> bool:
+        """Метод для проверки активности соединения"""
+        return self.conn is not None and self.conn.closed == 0
 
     def insert_employer(self, employer_data):
         """Метод для добавления работодателя в БД"""
@@ -190,12 +188,11 @@ class DBManager:
                     v.salary_to, 
                     v.currency, 
                     v.url,
-                    v.description,
-                    v.vacancy_id
+                    v.description
                 FROM vacancies v
                 JOIN employers e ON v.employer_id = e.employer_id
                 ORDER BY e.employer_name, v.title
-            """
+                """
             )
             return cursor.fetchall()
 
@@ -262,7 +259,8 @@ class DBManager:
 
         for vac in vacancies_data:
             try:
-                (employer_name, title, salary_from, salary_to, currency, url, description, vacancy_id) = vac
+                # Теперь ожидаем 7 полей вместо 8 (убрали vacancy_id)
+                (employer_name, title, salary_from, salary_to, currency, url, description) = vac
 
                 vacancies.append(
                     Vacancy(
@@ -274,6 +272,7 @@ class DBManager:
                             "currency": currency if currency else "не указана",
                         },
                         description=description if description else "Нет описания",
+                        employer=employer_name
                     )
                 )
             except Exception as e:

@@ -1,14 +1,15 @@
 class Vacancy:
     """Класс для представления вакансии"""
 
-    __slots__ = ("_title", "_url", "_salary", "_description")  # Для экономии памяти
+    __slots__ = ("_title", "_url", "_salary", "_description", "_employer")  # Для экономии памяти
 
-    def __init__(self, title: str, url: str, salary: dict | None, description: str):
+    def __init__(self, title: str, url: str, salary: dict | None, description: str, employer: str = None):
         """Конструктор с валидацией всех атрибутов"""
         self._title = self.__validate_title(title)
         self._url = self.__validate_url(url)
         self._salary = self.__validate_salary(salary)
         self._description = self.__validate_description(description)
+        self._employer = employer
 
     def __validate_title(self, title: str) -> str:
         """Приватный метод валидации названия вакансии"""
@@ -115,11 +116,11 @@ class Vacancy:
     def from_db_row(cls, db_row: tuple):
         """Класс-метод для создания объекта Vacancy из строки БД"""
         return cls(
-            title=db_row[1],  # предполагаем что title в колонке 1
-            url=db_row[6],  # url в колонке 6
+            title=db_row[1],
+            url=db_row[6],
             salary={
-                "from": db_row[3] if db_row[3] else 0,  # salary_from
-                "to": db_row[4] if db_row[4] else 0,  # salary_to
+                "from": db_row[3] if db_row[3] else 0,
+                "to": db_row[4] if db_row[4] else 0,
                 "currency": db_row[5] if db_row[5] else "не указана",
             },
             description=db_row[7] if len(db_row) > 7 else "",

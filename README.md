@@ -27,6 +27,8 @@
 
 3. Убедитесь, что файл `database.ini` добавлен в `.gitignore`
 
+4. Запустите код в **main.py**
+
 ### Документация для сбора вакансий с hh.ru
 Ссылка на API: https://github.com/hhru/api/.
 
