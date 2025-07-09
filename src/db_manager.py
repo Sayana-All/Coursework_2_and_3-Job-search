@@ -272,7 +272,7 @@ class DBManager:
                             "currency": currency if currency else "не указана",
                         },
                         description=description if description else "Нет описания",
-                        employer=employer_name
+                        employer=employer_name,
                     )
                 )
             except Exception as e:

@@ -16,15 +16,17 @@ def initialize_database(db_name: str = "vacancies") -> Optional[DBManager]:
         temp_params = config()
         temp_params.pop("database", None)
 
-        with psycopg2.connect(**temp_params) as admin_conn:
-            admin_conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with admin_conn.cursor() as cursor:
-                cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
-                if not cursor.fetchone():
-                    cursor.execute(f"CREATE DATABASE {db_name}")
-                    print(f"База данных {db_name} создана")
-                else:
-                    print(f"База данных {db_name} уже существует")
+        admin_conn = psycopg2.connect(**temp_params)
+        admin_conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        admin_conn.autocommit = True
+        cursor = admin_conn.cursor()
+        cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{db_name}'")
+        if not cursor.fetchone():
+            cursor.execute(f"CREATE DATABASE {db_name}")
+            print(f"База данных {db_name} создана")
+        else:
+            print(f"База данных {db_name} уже существует")
+        admin_conn.close()
 
         manager = DBManager(db_name)
 
