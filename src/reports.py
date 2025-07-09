@@ -4,6 +4,8 @@ import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from src.db_manager import DBManager
+
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 
@@ -77,6 +79,45 @@ class JSONSaver(AbstractSaver):
         else:
             print("Файл не найден.")
 
+    def import_to_database(self, db_manager: "DBManager") -> dict:
+        """Метод для импорта вакансий из JSON-файла в базу данных"""
+        result = {"total": 0, "added": 0, "errors": 0}
+        vacancies_data = self._load_data()
+
+        if not vacancies_data:
+            print(f"Файл {self.__filename} пуст или не существует")
+            return result
+
+        result["total"] = len(vacancies_data)
+
+        for vac_data in vacancies_data:
+            try:
+
+                if not all(key in vac_data for key in ["title", "url", "salary"]):
+                    raise ValueError("Отсутствуют обязательные поля")
+
+                vacancy_dict = {
+                    "name": vac_data["title"],
+                    "alternate_url": vac_data["url"],
+                    "salary": vac_data["salary"],
+                    "snippet": {"requirement": vac_data.get("description", "")},
+                    "id": vac_data.get("id", 0),  # Добавляем ID если есть в файле
+                }
+
+                if "employer" in vac_data:
+                    vacancy_dict["employer"] = vac_data["employer"]
+                else:
+                    vacancy_dict["employer"] = {"id": 0}  # Значение по умолчанию
+                db_manager.insert_vacancy(vacancy_dict)
+                result["added"] += 1
+
+            except Exception as e:
+                result["errors"] += 1
+                print(f"Ошибка при импорте вакансии: {e}")
+                continue
+
+        return result
+
 
 class CSVSaver(AbstractSaver):
     """Класс для сохранения вакансий в CSV-файл"""
@@ -131,3 +172,46 @@ class CSVSaver(AbstractSaver):
             print(f"Файл '{self.__filename}' успешно удалён.")
         else:
             print("Файл не найден.")
+
+    def import_to_database(self, db_manager: "DBManager") -> dict:
+        """Импортирует вакансии из CSV файла в базу данных"""
+        result = {"total": 0, "added": 0, "errors": 0}
+        vacancies_data = self.get_vacancies()
+
+        if not vacancies_data:
+            print(f"Файл {self.__filename} пуст или не существует")
+            return result
+
+        result["total"] = len(vacancies_data)
+
+        for vac_data in vacancies_data:
+            try:
+                salary_from = int(vac_data.get("salary_from", 0)) if vac_data.get("salary_from") else 0
+                salary_to = int(vac_data.get("salary_to", 0)) if vac_data.get("salary_to") else 0
+
+                vacancy_dict = {
+                    "name": vac_data["title"],
+                    "alternate_url": vac_data["url"],
+                    "salary": {
+                        "from": salary_from,
+                        "to": salary_to,
+                        "currency": vac_data.get("currency", "не указана"),
+                    },
+                    "snippet": {"requirement": vac_data.get("description", "")},
+                    "id": int(vac_data.get("id", 0)),
+                }
+
+                if "employer_id" in vac_data:
+                    vacancy_dict["employer"] = {"id": int(vac_data["employer_id"])}
+                else:
+                    vacancy_dict["employer"] = {"id": 0}
+
+                db_manager.insert_vacancy(vacancy_dict)
+                result["added"] += 1
+
+            except Exception as e:
+                result["errors"] += 1
+                print(f"Ошибка при импорте вакансии: {e}")
+                continue
+
+        return result
